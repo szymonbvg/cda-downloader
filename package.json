@@ -1,6 +1,6 @@
 {
   "name": "cda-downloader",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "main": "./index.js",
   "type": "module",
   "keywords": [
@@ -11,6 +11,11 @@
   },
   "bin": {
     "cda-downloader": "./index.js"
+  },
+  "homepage": "https://github.com/szymonbvg/cda-downloader",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/szymonbvg/cda-downloader.git"
   },
   "author": "szymonbvg",
   "license": "MIT",
