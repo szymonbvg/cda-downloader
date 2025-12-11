@@ -2,11 +2,11 @@ import args from "./config/args.js";
 import { showInfo, showJSON, showMessage } from "./utils/logger.js";
 import { rmSync } from "fs";
 import { mkdir } from "fs/promises";
-import { parseArgs, parseDuration } from "./utils/parser.js";
+import { parseArgs, parseDuration, parseVideoURL } from "./utils/parser.js";
 import { DownloaderError } from "./utils/DownloaderError.js";
 import { InfoMessage } from "./config/messages.js";
 import { ErrorCode } from "./config/errors.js";
-import { download, getSegments, getVideoData } from "./helpers/downloader.js";
+import { download, getSegments, getVideoData, getVideoFileURL } from "./helpers/downloader.js";
 import { checkAvaibility, merge } from "./helpers/ffmpeg.js";
 import { showDetails } from "./utils/details.js";
 import { parse } from "path";
@@ -36,28 +36,34 @@ export async function main() {
   const match = data.match(cdaRegExp);
   if (!match) new DownloaderError(ErrorCode.INVALID_URL).handle();
 
-  const videoId = data
-    .split("/")
-    .filter((e) => e !== "")
-    .pop();
-
-  if (videoId === "vfilm") new DownloaderError(ErrorCode.DASH_ONLY).handle();
+  const videoId = parseVideoURL(data);
 
   const videoData = await getVideoData(videoId);
   if (videoData instanceof DownloaderError) videoData.handle();
 
-  const segments = await getSegments(videoData.manifest);
-  if (segments instanceof DownloaderError) segments.handle();
-  if (segments.audio.length <= 0 || segments.video.length <= 0) {
-    new DownloaderError(ErrorCode.NO_SEGMENTS).handle();
-  }
-
   showMessage("title", decodeURIComponent(videoData.title));
   showMessage("duration", parseDuration(videoData.duration));
+
   const qualities = [];
-  for (const segment of segments.video) {
-    qualities.push(segment.resolution);
-    showMessage("quality", segment.resolution);
+  let segments = null;
+
+  if (!videoData.manifest) {
+    Object.keys(videoData.qualities).forEach((q) => qualities.push(q));
+    qualities.sort((a, b) => parseInt(b) - parseInt(a));
+  } else {
+    segments = await getSegments(videoData.manifest);
+    if (segments instanceof DownloaderError) segments.handle();
+    if (segments.audio.length <= 0 || segments.video.length <= 0) {
+      new DownloaderError(ErrorCode.NO_SEGMENTS).handle();
+    }
+
+    for (const segment of segments.video) {
+      qualities.push(segment.resolution);
+    }
+  }
+
+  for (const q of qualities) {
+    showMessage("quality", q);
   }
 
   if (args.json.value) {
@@ -67,7 +73,7 @@ export async function main() {
 
   if (args.skipDownload.value) return 0;
 
-  const quality = args.quality.value ?? segments.video[0].resolution;
+  const quality = args.quality.value ?? qualities[0];
   if (!qualities.includes(quality)) new DownloaderError(ErrorCode.UNKNOWN_QUALITY, quality).handle();
 
   if (!args.audioOnly.value) {
@@ -75,12 +81,36 @@ export async function main() {
     showInfo(InfoMessage.SELECTED_QUALITY(quality));
   }
 
+  const { path, file } = args.output.value;
+
+  if (!videoData.manifest) {
+    const fileUrl = await getVideoFileURL(
+      videoId,
+      videoData.qualities[quality],
+      videoData.ts,
+      videoData.hash2
+    );
+
+    const outputFile = file ?? `${videoId}.mp4`;
+
+    const source = {
+      url: fileUrl,
+      output: `${path}/${outputFile}`,
+    };
+
+    const err = await download([source]);
+    if (err instanceof DownloaderError) err.handle();
+
+    showInfo(InfoMessage.SUCCESS);
+    return 0;
+  }
+
+  if (!segments) new DownloaderError(ErrorCode.NO_SEGMENTS).handle();
+
   const bestAudio = segments.audio.reduce((a, b) => (a.bandwidth > b.bandwidth ? a : b));
   const videoSegment = segments.video.find((s) => s.resolution === quality);
 
   const segmentsUrl = videoData.manifest.substring(0, videoData.manifest.lastIndexOf("/") + 1);
-
-  const { path, file } = args.output.value;
 
   let audioDownload = {
     url: segmentsUrl + bestAudio.url,

@@ -54,3 +54,13 @@ export function parseDuration(seconds) {
 
   return [h ? `${h}h` : "", h || m ? `${m}m` : "", `${s}s`].join(" ");
 }
+
+export function parseVideoURL(url) {
+  const parsedUrl = url.split("/").filter((e) => e !== "");
+  let videoId = parsedUrl.pop();
+  if (videoId === "vfilm") {
+    videoId = parsedUrl.pop();
+  }
+
+  return videoId;
+}

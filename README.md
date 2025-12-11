@@ -2,8 +2,6 @@
 
 A simple command-line tool for downloading videos from [cda.pl](https://www.cda.pl)
 
-**NOTE:** Currently only videos in DASH segments are supported. If a video URL ends with `/vfilm`, it won't be downloaded
-
 ## INSTALLATION
 
 ### Global installation
@@ -49,9 +47,11 @@ npm start -- [options] url
 ```
 -h, --help                 Show help
 -v, --version              Show version
--ao, --audio-only          Download audio only
--vo, --video-only          Download video only
--s, --skip-download        Print video information, do no download
+-ao, --audio-only          Download audio only. Not supported for non-DASH (vfilm)
+                           media
+-vo, --video-only          Download video only. Not supported for non-DASH (vfilm)
+                           media
+-s, --skip-download        Print video information, do not download
 -j, --json                 Print video information as JSON, do not download
 -o, --output <output>      Set output media file path. Without --audio-only or
                            --video-only, it sets the path for the final merged file
@@ -61,3 +61,5 @@ npm start -- [options] url
                            not specified, the best quality is selected automatically
 -f, --ffmpeg-path <path>   Set path to the FFmpeg executable (default: "ffmpeg")
 ```
+
+**NOTE:** The `--audio-only` and `--video-only` options are currently not supported for non-DASH `(vfilm)` media

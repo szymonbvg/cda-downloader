@@ -12,17 +12,17 @@ export default {
   audioOnly: {
     options: ["-ao", "--audio-only"],
     value: false,
-    description: "Download audio only",
+    description: "Download audio only. Not supported for non-DASH (vfilm) media",
   },
   videoOnly: {
     options: ["-vo", "--video-only"],
     value: false,
-    description: "Download video only",
+    description: "Download video only. Not supported for non-DASH (vfilm) media",
   },
   skipDownload: {
     options: ["-s", "--skip-download"],
     value: false,
-    description: "Print video information, do no download",
+    description: "Print video information, do not download",
   },
   json: {
     options: ["-j", "--json"],

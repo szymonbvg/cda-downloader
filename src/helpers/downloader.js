@@ -23,8 +23,24 @@ export async function getVideoData(id) {
   if (!mediaPlayer) return new DownloaderError(ErrorCode.FAILED_TO_FETCH_DATA);
 
   const playerData = mediaPlayer.attrs["player_data"];
-  const { manifest, title, duration } = JSON.parse(playerData).video;
-  return { manifest, title, duration: parseInt(duration) };
+  const { manifest, title, duration, qualities, ts, hash2 } = JSON.parse(playerData).video;
+  return { manifest, title, duration: parseInt(duration), qualities, ts, hash2 };
+}
+
+export async function getVideoFileURL(id, quality, ts, hash2) {
+  const res = await axios.post(`https://www.cda.pl/video/${id}`, {
+    id: 3,
+    jsonrpc: "2.0",
+    method: "videoGetLink",
+    params: {
+      0: id,
+      1: quality,
+      2: ts,
+      3: hash2,
+    },
+  });
+  const { result } = res.data;
+  return result.status === "ok" ? result.resp : null;
 }
 
 export async function getSegments(manifestUrl) {
